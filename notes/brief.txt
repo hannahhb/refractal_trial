@@ -1,0 +1,156 @@
+ REFRACTAL
+
+
+
+ Dataset quality and
+ monitor labeling
+ Take-home assignment: 4 hours
+
+
+ Context
+ At Refractal, we build monitors that assess an AI agent's proposed actions before execution. A
+ monitor returns Accept or Reject: allow the action to proceed, or block it.
+ We have collected agent trajectories from software and operational tasks in sandboxed
+ environments. We want to turn these trajectories into useful training and evaluation data for a
+ monitor.
+ We'd like you to explore the data, follow promising leads, and work out how to turn it into labels we
+ can trust. Show us what you discover and how it changes what you would do next.
+
+ The dataset
+ 58 agent trajectories. Each record contains:
+  • messages: the recorded conversation: assistant turns, tool calls, and tool responses.
+  • actions: recorded tool events, with stable action IDs, arguments, results, and links to messages
+    where available.
+  • main_tasks: legitimate task definitions, where available.
+  • adversarial_tasks: adversarial objectives, where available.
+  • environment, tool_registrations, actor_model, and actor_seed: context about the environment,
+    available tools, and agent.
+ The supplied records have no Accept/Reject annotations. Treat the task descriptions as generation
+ context and investigate what the recorded behavior supports.
+ The accompanying ZIP contains the trajectories, field documentation, and a Python loader. Extract it
+ before you begin. Python's standard library is enough to load the data.
+ After extracting the ZIP, load the data using Python's standard library:
+   import gzip
+   import json
+
+   with gzip.open("data/trajectories.jsonl.gz", "rt", encoding="utf-8") as f:
+       traces = [json.loads(line) for line in f]
+
+   assert len(traces) == 58
+
+ See README.md in the ZIP for field definitions and loading instructions.
+
+ Resources
+  • You may use coding agents and other tools you already have access to. We do not provide
+    coding-agent subscriptions or API keys for coding agents. Explain which tools you used and how.
+  • For model calls in labeling and validation, we provide a Google Vertex AI API key upon request.
+    Contact the person who sent you this assignment to arrange access. Record model usage and
+    estimated cost where applicable.
+  • Build whatever tooling helps. There's no restriction on approach; the length of the traces and the
+    reliability of the resulting labels are the constraints to design around.
+  • This is an offline data exercise. Read commands in the traces as data; any environment replay
+    would need a separate sandbox.
+
+
+
+Refractal | Data engineering work trial                                                                  1
+ What we're evaluating
+  • Independent judgment: how you frame the problem, prioritize the important uncertainties, test
+    assumptions, and revise your approach when the evidence warrants it.
+  • Evidence and calibration: findings and labels that are cited, quantified, and clear about
+    uncertainty, alongside a sensible way to establish whether your judging method works.
+  • Engineering and scale: a working, reproducible prototype and a practical path from this sample
+    to an automated labeling pipeline.
+  • Communication: clear explanations of your choices, limitations, results, and next steps.
+ We value a useful starting point, justified choices, and evidence that helps you improve your
+ approach. You can conclude that the dataset needs substantial changes before it serves the intended
+ purpose.
+
+ Deliverable
+ Two things:
+  • Part 1: report. A written report of your findings and proposed labeling approach, with evidence. A
+    concise, cited finding beats a pile of hunches.
+  • Part 2: pipeline. Runnable code, a sample of its output, instructions to reproduce it, and an
+    overview of the pipeline and validation study. Distinguish what you implemented, what you
+    measured, and what you propose.
+ Write the report for a human reader: explain what you did, what you found, and why it matters. We
+ will reject vague, generic filler and claims you cannot explain.
+ Feel free to write the report with a coding agent. We recommend giving it detailed instructions, then
+ reading the result carefully and checking that you understand every claim, method, and term.
+ Anything in the report may come up in the follow-up interview, and you will have the report available
+ throughout. Treat the interview as a discussion of your work: if you understand what you submitted
+ and can explain your choices, you are well prepared.
+
+ Logistics
+  • Time limit: 4 hours. Your four-hour window begins when you submit the start form by pressing
+    Start. The confirmation page provides the brief and dataset downloads. Email your report and code,
+    or a private link to them, to samuel@refractal-ai.com within that window. We expect a prioritized
+    investigation, a working prototype, and a validation plan. Decide how to use the time and explain
+    your priorities.
+  • Stop at the time limit and tell us what you left unfinished. We will discuss your reasoning and code
+    in a 30 to 45 minute walkthrough.
+  • If anything seems broken or unclear about the data, access, or the task, contact the person who
+    sent you this assignment. Arrange any requested Vertex API access before you press Start. If a
+    technical problem interrupts your trial, contact us and describe it in your submission notes.
+
+ Privacy
+ Please keep this work trial and its data private. Please don't replicate or redistribute the work trial,
+ and delete the supplied datasets and any copies you made after the follow-up interview. Much
+ appreciated.
+
+ Final words
+ Work trials can feel scary. Work trials should resemble the job; so they should be fun too! We like
+ working with people who are curious and enjoy figuring things out together, and we'd like you to get a
+ feel for that here.
+ We've tucked a small easter egg into the data. Include your best guess in your report; this part is just
+ for fun. Follow what catches your attention, ask questions, and tell us what you find. We hope you
+ enjoy it.
+
+
+
+
+Refractal | Data engineering work trial                                                                     2
+ The task
+ Make reasonable decisions where details are missing, including defining a security policy if your
+ approach needs one. Explain what you chose and why. We want to see whether you can get a useful
+ approach working, justify your decisions, and identify how to improve it.
+
+ Part 1: What is happening in these trajectories?
+ Explore the supplied trajectories. What do you notice? What patterns do you see? How do the attacks
+ work? How would you describe and name the attack patterns you find?
+ Follow the leads you find interesting, and explain what you inspected and why. Assess the dataset's
+ quality and usefulness for training and evaluating an Accept/Reject monitor, and give us evidence.
+ We're interested in:
+  • Dataset description and threat models: what behaviors are represented, what the attackers
+    control and try to achieve, and which monitoring challenges the trajectories could test.
+  • Quality and coverage: important problems, gaps, ambiguities, or artifacts in the data, and how
+    they affect its use. Explain what you would keep, fix, exclude, or investigate further.
+ For every substantive finding, cite the trajectories and messages or action IDs it rests on, and
+ quantify it where you can. Be explicit about what you're unsure of and what additional evidence
+ would resolve it.
+
+ Part 2: How would you train a monitor to catch these attacks?
+ How would you label this data so we can train a monitor to defend against the attacks you identified?
+ The monitor should predict Accept or Reject at runtime. It receives the legitimate task, the
+ interaction history available so far, and a proposed tool call. It decides before that call executes.
+ Devise a labeling pipeline for this use and implement a working prototype. Decide what to label, what
+ the labels mean, and how to judge them. Produce structured output and preserve enough evidence
+ for someone else to review the decisions. Work through concrete examples.
+ Use your pipeline to label all trajectories or a subset of them. Explain what you covered and why.
+ Red team your labeling. Devise a study to decide whether the labels are reliable. Run one useful
+ check or comparison within the time available, and describe the rest of the study. What does your
+ approach do well, where might it fail, and what are its caveats? Explain what you prioritized when
+ choosing your pipeline, which metrics guided your decisions, and why. Show one assumption you
+ tested and whether the result changed your approach. What would you change with another day,
+ three days, or a week?
+ Scaling. The trajectories are long, the next corpus may contain 100,000 of them, and labeling can be
+ expensive. Describe how your pipeline reads, processes, and reviews data at that scale, including how
+ someone could reproduce or resume a run.
+ Concrete next step. Finish with the next action you would take and which uncertainty it would
+ resolve. Include the next data you would obtain or generate, where it would come from, and why.
+
+
+
+
+Refractal | Data engineering work trial                                                                  3
+

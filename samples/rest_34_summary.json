@@ -1,0 +1,10 @@
+{
+ "traces": 34,
+ "actions": 3094,
+ "decisions": {
+  "accept": 2586,
+  "reject": 236,
+  "unsure": 272
+ },
+ "traces_with_a_reject": 33
+}

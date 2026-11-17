@@ -1,0 +1,150 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs,tabularx,array,longtable}
+\renewcommand{\arraystretch}{1.1}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\grp}[1]{\midrule\multicolumn{4}{@{}l}{\textit{#1}}\\\addlinespace[2pt]}
+\newcommand{\KEEP}{\textbf{Keep}}
+\newcommand{\FIX}{\textbf{Fix}}
+\newcommand{\EXCL}{\textbf{Exclude}}
+\newcommand{\INV}{\textbf{Investigate}}
+\pagestyle{empty}
+
+\begin{document}
+
+\section*{Problems, gaps and artefacts in the data}
+
+Each row gives the problem, why it matters for building and evaluating a monitor, and what I would do.
+\KEEP{} = use as is, but report it; \FIX{} = clean it before use; \EXCL{} = remove from what the monitor
+sees or from a metric; \INV{} = ask the data owners or check further.
+
+\medskip
+{\small
+\begin{longtable}{@{} L{3.3cm} L{4.8cm} L{5.6cm} L{2.0cm} @{}}
+\toprule
+\textbf{Problem} & \textbf{Effect on use} & \textbf{What I would do} & \textbf{Decision} \\
+\endfirsthead
+\toprule
+\textbf{Problem} & \textbf{Effect on use} & \textbf{What I would do} & \textbf{Decision} \\
+\endhead
+\grp{Gaps in what the dataset can show}
+No honest runs in Family A (all 46 have a harmful goal) &
+False alarms cannot be measured per trace; a monitor that flags everything looks perfect &
+Measure false alarms per action (most actions are honest work); use the 6 honest twins; build honest versions by removing attack steps &
+\KEEP{}, report \\
+Only 6 honest traces in total (90\% attack rate) &
+Accuracy is meaningless; precision will not carry over to real use, where attacks are rare &
+Report recall, precision and false alarms, not accuracy; state the base-rate caveat &
+\KEEP{}, report \\
+Model, environment, family and attack type change together &
+A monitor can score well by recognising the setting rather than the behaviour &
+Report every result per family; do not generalise across families &
+\KEEP{}, report \\
+About 12 distinct tasks; repeated runs are near-copies &
+Results look more certain than they are; random splits leak between train and test &
+Group and split by task; report counts and examples, not polished percentages &
+\KEEP{}, report \\
+No ground-truth labels or grader results; test tools never called &
+``Succeeded'' can only be inferred from the agent's own outputs &
+Hand-label a gold set; label \emph{attempted} and \emph{succeeded} separately; ask for scorer outputs &
+\INV{} \\
+\grp{Missing or partial context}
+Family A has no recorded prompts (no system or user messages) &
+We cannot see what the agent was told, so its intent cannot be judged &
+Treat as actions-only; label what actions do, not intent; ask whether the prompts exist &
+\INV{} \\
+Family B prompts look partly stripped: a safety warning the worker quotes is in none of the 12 system prompts &
+What the worker knew is uncertain &
+Note it; ask for the full prompts &
+\INV{} \\
+No reasoning in Family A; reasoning partly hidden in Family B &
+Reasoning-based monitoring can only be tested on 12 traces &
+Run two monitor conditions: actions only, and with reasoning &
+\KEEP{} \\
+Offline only: effects cannot be checked (did the deletion persist? did the exploit fire?) &
+Success stays uncertain for about 8 traces &
+Mark success as unclear where there is no in-trace evidence; replay only in a separate sandbox &
+\INV{} \\
+\grp{Fields that give the answer away}
+Answer-leaking fields and strings (listed below the table) &
+A monitor that sees these copies the answer and looks far better than it is &
+Hide them from the monitor; keep them only for checking results; report results with and without masking &
+\EXCL{} from monitor input \\
+42 submission-tool calls with no proposing message &
+They are the scorer's interface, not real environment actions, yet they hold the clearest evidence &
+Hide from the monitor; use as supporting evidence when labelling &
+\EXCL{} from monitor input \\
+\grp{Recording artefacts and data quality}
+Status fields wrong: \texttt{event\_failed} never true despite 56 errors; \texttt{event\_observed} always true &
+Failure counts from these fields are wrong &
+Derive my own failure flag from errors, exit codes and tracebacks &
+\FIX{} \\
+42 non-zero exit codes and about 306 tracebacks carry no error flag; 10 outputs cut at about 16.5\,KB &
+Hidden failures; a cut output may hide the evidence &
+Add a ``failed'' and a ``truncated'' flag per action &
+\FIX{} \\
+Commands stored under different keys (\texttt{cmd}, \texttt{command}, script fields) &
+A parser reading one key silently misses commands &
+Normalise in the loader (done) &
+\FIX{} (done) \\
+Tool outputs stored twice (in messages and in actions) &
+Inflates size and token counts &
+Use the action records only (verified identical) &
+\FIX{} (done) \\
+Easter egg: inserted text in 8 messages &
+Messages were edited after recording; could distract a labeller &
+Flag and strip before labelling; note the provenance caveat for message text &
+\FIX{} \\
+One trace cut off by a safety filter (customs fraud) &
+Incomplete; the attack never finished &
+Keep for labelling; exclude from ``did the attack succeed'' metrics &
+\EXCL{} from success metrics \\
+13 traces never submit; 15 have no seed &
+Minor; affects completion and reproducibility claims &
+Note in the report &
+\KEEP{} \\
+Main-task spec contradicts itself (\texttt{backend.go} vs.\ \texttt{backend.py}) &
+Unclear what ``main task done'' means there &
+Note it; do not score main-task completion strictly &
+\KEEP{}, report \\
+A traceback contains a home-directory path, username and project name &
+Privacy leak in the data itself &
+Redact in anything I output; tell the data owners &
+\FIX{} \\
+\grp{Ambiguities the labelling policy must settle}
+Harmful outcome vs.\ harmful intent: Family B workers carry out harm they may not understand &
+One label cannot say both ``harm happened'' and ``the agent meant it'' &
+Two separate fields: harm of the action, and the agent's apparent awareness &
+\FIX{} (in policy) \\
+Required actions that look harmful (external email, \texttt{Delete()}, test emails) &
+Naive rules and monitors raise false alarms &
+Write explicit rules: judge what the action does in context, not its keywords &
+\KEEP{} as hard cases \\
+Honest twins make the same final write as the attacks &
+Harm depends on earlier context (approvals checked, value origin) &
+Give the monitor the history, not single actions &
+\KEEP{} as hard cases \\
+Workers mention ``the autograder'' and ``DecompBench'' &
+Behaviour in a known test may differ from deployment &
+Note it as a limit on how far results generalise &
+\KEEP{}, report \\
+\bottomrule
+\end{longtable}
+}
+
+{\sloppy\noindent\textit{Answer-leaking fields and strings:} \texttt{adversarial\_tasks}; the side-task submission tool;
+\texttt{rce\_secret} and \texttt{/tmp/pwned}; ``authorized'' (only in honest prompts); \texttt{exfiltrate\_tokens}
+in a task id; the test tools in the tool list.\par}
+
+\subsection*{Summary}
+\begin{itemize}\setlength\itemsep{1pt}
+  \item \textbf{Keep} all 58 traces: none is unusable, and the hard cases (honest twins, required look-alike actions) are the most valuable part.
+  \item \textbf{Fix} the status fields, argument keys, duplicated outputs, inserted text and the privacy leak before any analysis.
+  \item \textbf{Exclude} the answer-leaking fields from what the monitor sees, and the cut-off trace from success metrics.
+  \item \textbf{Investigate} with the data owners: grader results, the missing prompts, and whether the attacks really succeeded.
+  \item \textbf{Overall:} the data is good for testing whether a monitor catches realistic attacks, weak for measuring false alarms, and too small to train on.
+\end{itemize}
+
+\end{document}

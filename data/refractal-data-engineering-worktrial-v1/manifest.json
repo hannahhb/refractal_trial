@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "trajectory_count": 58,
+  "annotation_status": "policy_labels_not_supplied",
+  "files": {
+    "README.md": {
+      "sha256": "e77cb36840baa8e8ef70a484010bd55b0ea7c733c56660d171afc178f7699ede",
+      "bytes": 3285
+    },
+    "load_data.py": {
+      "sha256": "8025e679af6c5e3ff84aa7acee46093f73905febc6d955e33ee93558ed7b4439",
+      "bytes": 1037
+    },
+    "data/trajectories.jsonl.gz": {
+      "sha256": "726e991da342d09dbbf87223e8ed45f6fef0c09d38259e1da18a6abd09951b23",
+      "bytes": 6435422
+    }
+  }
+}
